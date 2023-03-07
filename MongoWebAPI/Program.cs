@@ -1,26 +1,30 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using MongoWebAPI;
 using MongoWebAPI.Repositories;
 
-static void Main(string[] args)
-{
-    var host = new WebHostBuilder()
-        .UseKestrel()
-        .UseContentRoot(Directory.GetCurrentDirectory())
-        .ConfigureAppConfiguration((hostingContext, config) =>
-        {
-            config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-        })
-        .ConfigureServices((hostingContext, services) =>
-        {
-            services.Configure<RepoOptions>(hostingContext.Configuration.GetSection(nameof(RepoOptions)));
-            services.AddSingleton<IUserRepository, UserRepository>();
-        })
-        .UseStartup<Startup>()
-        .Build();
+var builder = WebApplication.CreateBuilder(args);
 
-    host.Run();
+// Add services to the container.
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.Configure<RepoOptions>(builder.Configuration.GetSection(nameof(RepoOptions)));
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
