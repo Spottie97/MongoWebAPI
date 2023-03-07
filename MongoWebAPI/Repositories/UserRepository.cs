@@ -16,49 +16,53 @@ namespace MongoWebAPI.Repositories
             _users = database.GetCollection<User>(options.Value.CollectionName);
         }
         //Get All Users
-        public async Task<List<User>> GetAllUsers()
+        public async Task<List<User>> getAllUsersAsync()
         {
             return await _users.Find(user => true).ToListAsync();
         }
         //Get ID
-        public async Task<User> GetUserById(int id)
+        public async Task<User> getUserByIdAsync(int id)
         {
-            return await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
+            return await _users.Find(Builders<User>.Filter.Eq(user => user.Id, id)).FirstOrDefaultAsync();
         }
-
-        public async Task InsertUser(User user)
+        
+        //Insert
+        public async Task insertUserAsync(User user)
         {
-            // Generate a unique Id for the new user
-            var highestId = await _users.CountDocumentsAsync(Builders<User>.Filter.Empty);
-            user.Id = highestId != 0 ? (int)(highestId + 1) : 1;
+            // Keep generating a new id until it's unique
+            int id;
+            do
+            {
+                var highestId = await _users.Find(Builders<User>.Filter.Empty)
+                    .SortByDescending(user => user.Id)
+                    .FirstOrDefaultAsync();
+                id = highestId != null ? highestId.Id + 1 : 1;
+            }
+            while (await _users.Find(Builders<User>.Filter.Eq(user => user.Id, id)).AnyAsync());
 
+            user.Id = id;
             await _users.InsertOneAsync(user);
         }
+
         //Update
-        public async Task<bool> UpdateUser(int id, User user)
+        public async Task<bool> updateUserAsync(int id, User user)
         {
-            var updateResult = await _users.ReplaceOneAsync(user => user.Id == id, replacement: user);
+            var updateResult = await _users.ReplaceOneAsync(Builders<User>.Filter.Eq(user => user.Id, id), user);
             return updateResult.IsAcknowledged && updateResult.ModifiedCount > 0;
         }
         //Delete
-        public async Task<bool> DeleteUser(int id)
+        public async Task<bool> deleteUserAsync(int id)
         {
-            var deleteResult = await _users.DeleteOneAsync(user => user.Id == id);
+            var deleteResult = await _users.DeleteOneAsync(Builders<User>.Filter.Eq(user => user.Id, id));
             return deleteResult.IsAcknowledged && deleteResult.DeletedCount > 0;
         }
         //LastName
-        public async Task<List<User>> GetUsersByLastName(string lastName)
+        public async Task<List<User>> getUsersByLastNameAsync(string lastName)
         {
             //New method like you showed me...this right? xD
             return await _users.Find(Builders<User>.Filter.Eq(user => user.LastName, lastName)).ToListAsync();
         }
     }
-    //Used to get connection info
-    public class RepoOptions
-    {
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
-        public string CollectionName { get; set; }
-    }
 }
+
 

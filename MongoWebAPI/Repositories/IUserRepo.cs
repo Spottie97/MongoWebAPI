@@ -5,11 +5,11 @@ namespace MongoWebAPI.Repositories
 {
     public interface IUserRepository
     {
-        Task<List<User>> GetAllUsers();
-        Task<User> GetUserById(int id);
-        Task InsertUser(User user);
-        Task<bool> UpdateUser(int id, User user);
-        Task<bool> DeleteUser(int id);
-        Task<List<User>> GetUsersByLastName(string lastName);
+        Task<List<User>> getAllUsersAsync();
+        Task<User> getUserByIdAsync(int id);
+        Task insertUserAsync(User user);
+        Task<bool> updateUserAsync(int id, User user);
+        Task<bool> deleteUserAsync(int id);
+        Task<List<User>> getUsersByLastNameAsync(string lastName);
     }
 }

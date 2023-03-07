@@ -13,61 +13,117 @@ namespace MongoWebAPI.Controllers
 
         public UserController(IUserRepository userRepository)
         {
-            _userRepository = userRepository;
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));;
         }
 
         [HttpGet]
-        public async Task<List<User>> GetAllUsers()
+        public async Task<List<User>> GetAllUsersAsync()
         {
-            return await _userRepository.GetAllUsers();
+            return await _userRepository.getAllUsersAsync();
         }
 
         [HttpGet("{id}")]
-        public async Task<User> GetUserById(int id)
+        public async Task<User> GetUserByIdAsync(int id)
         {
-            return await _userRepository.GetUserById(id);
+            return await _userRepository.getUserByIdAsync(id);
         }
 
         [HttpPost]
-        public async Task<IActionResult> InsertUser(User user)
+        public async Task<IActionResult> InsertUserAsync(User user)
         {
-            await _userRepository.InsertUser(user);
-            return Ok();
+            try
+            {
+                if (user == null)
+                {
+                    throw new ArgumentNullException(nameof(user));
+                }
+
+                if (string.IsNullOrEmpty(user.FirstName))
+                {
+                    throw new ArgumentException("The FirstName field is required.", nameof(user.FirstName));
+                }
+
+                if (string.IsNullOrEmpty(user.LastName))
+                {
+                    throw new ArgumentException("The LastName field is required.", nameof(user.LastName));
+                }
+
+                await _userRepository.insertUserAsync(user);
+                return Ok();
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError(ex.ParamName, ex.Message);
+                return BadRequest(ModelState);
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User user)
+        public async Task<IActionResult> UpdateUserAsync(int id, User user)
         {
-            var isUpdated = await _userRepository.UpdateUser(id, user);
-            if (isUpdated)
+            try
             {
-                return Ok();
+                if (user == null)
+                {
+                    throw new ArgumentNullException(nameof(user));
+                }
+
+                if (string.IsNullOrEmpty(user.FirstName))
+                {
+                    throw new ArgumentException("The FirstName field is required.", nameof(user.FirstName));
+                }
+
+                if (string.IsNullOrEmpty(user.LastName))
+                {
+                    throw new ArgumentException("The LastName field is required.", nameof(user.LastName));
+                }
+
+                var isUpdated = await _userRepository.updateUserAsync(id, user);
+                if (isUpdated)
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound();
+                }
             }
-            else
+            catch (ArgumentNullException ex)
             {
-                return NotFound();
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError(ex.ParamName, ex.Message);
+                return BadRequest(ModelState);
             }
         }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var isDeleted = await _userRepository.DeleteUser(id);
-            if (isDeleted)
-            {
-                return Ok();
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
-
+        
         [HttpGet("lastname/{lastName}")]
-        public async Task<List<User>> GetUsersByLastName(string lastName)
+        public async Task<ActionResult<List<User>>> GetUsersByLastNameAsync(string lastName)
         {
-            return await _userRepository.GetUsersByLastName(lastName);
+            try
+            {
+                if (string.IsNullOrEmpty(lastName))
+                {
+                    throw new ArgumentNullException(nameof(lastName));
+                }
+
+                var users = await _userRepository.getUsersByLastNameAsync(lastName);
+                return Ok(users);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
     }
 }
+
+
 
